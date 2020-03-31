@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>resource/js/qwebchannel</file>
+        <file>resource/js/bridge</file>
+    </qresource>
+</RCC>

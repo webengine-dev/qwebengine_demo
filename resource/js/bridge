@@ -1,0 +1,68 @@
+"use strict";
+
+function bridge(callback) {
+    console.log("bridge construct");
+	var responseCallbacks = {};
+	var o_ = {};
+	
+    new QWebChannel(qt.webChannelTransport, function(channel) {
+        //console.log("init finished");
+        init(channel.objects.nativeBridge, o_);
+        if (callback) {
+            callback(o_);
+        }
+    });
+	
+    function init(nativeBridge, callback) {
+		console.log(nativeBridge);
+
+        o_.normal = function(callback) {
+            console.log("nomal");
+			request("normal", {}, callback);
+        }
+		
+		o_.minimize = function(callback) {
+			console.log("minimize");
+			request("minimize", {}, callback);
+		}
+		
+		o_.maximize = function(callback) {
+            console.log("maximize");
+			request("maximize", {}, callback);
+        }
+		
+		function request(cmd, args, callback) {
+			var callbackId = '';
+		    if (callback) {
+			  callbackId = cmd + '_' + generateUniqueId();
+			  responseCallbacks[callbackId] = callback;
+		    }
+		    nativeBridge.request(cmd, args, callbackId);
+		}
+		
+		nativeBridge.respone.connect(function (callbackId, args) {
+			  var callbackFunc = responseCallbacks[callbackId];
+			  if (callbackFunc) {
+				callbackFunc(args);
+				delete responseCallbacks[callbackId];
+			  }
+		});
+		
+		function generateUniqueId() {
+			var uid = randomString(10) + "_" + (new Date()).getTime();
+			 console.log(uid);
+			 return uid;
+		}
+		
+		function randomString(len) {
+			len = len || 32;
+			var $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+			var maxPos = $chars.length;
+			var pwd = '';
+			for (var i = 0; i < len; i++) {
+				pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
+			}
+			return pwd;
+		}
+    }
+}

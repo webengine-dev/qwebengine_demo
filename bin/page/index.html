@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>qwebchannel demo</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <!--<script type="text/javascript" src="../../resource/js/qwebchannel.js"></script>
+	<script type="text/javascript" src="../../resource/js/bridge.js"></script>-->
+
+    <script>
+		var main = null;
+		function create() {
+			new bridge(function(obj) {
+			    main = obj;
+				console.log("create bridge finished");
+			});
+		}
+		
+		function normal() {
+		    console.log("main", main);
+			main.normal(function(arg) {
+				console.log("normal finished");
+			});
+		}
+		
+		function minimize() {
+			main.minimize(function(arg) {
+				console.log("minimize finished");
+			});
+		}
+		
+		function maximize() {
+			main.maximize(function(arg) {
+				console.log("maximize finished");
+			});
+		}
+    </script>
+</head>
+<body onload="create()">
+<button onclick="normal()">正常显示</button>
+<button onclick="minimize()">最小化</button>
+<button onclick="maximize()">最大化</button>
+</body>
+</html>
