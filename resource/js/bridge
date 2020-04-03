@@ -1,5 +1,135 @@
 "use strict";
 
+class WebBridge extends object {
+	constructor() {
+		this.nativeBridge = null;
+		this.objects = {};
+	}
+	
+	init(callback) {
+		new QWebChannel(qt.webChannelTransport, function(channel) {
+			    this.inited = true;
+				//console.log("init finished");
+				this.nativeBridge = channel.objects.nativeBridge;
+				var callBackObject = this;
+				if (!this.nativeBridge) {
+					console.error("WebBridge init failed !!!!");
+					callBackObject = null;
+				}
+				
+				if (callback) {
+					callback(callBackObject);
+				}
+		});
+	}
+	
+	createObject(className, callback) {
+	   	if (!this.nativeBridge) {
+			console.error("WebBridge not inited, please init first!!!!");
+			return -1;
+		}
+		
+		try {  
+			var obj = eval("new " + className + "()");
+			var objectId = className + this.generateUniqueId();
+            this.objects[objectId] = obj;
+
+            var functionName = "createObject";
+			this.pushCallBack(objectId, functionName, callback);
+            this.nativeBridge.createObject(objectId, className, callback);
+			
+            return 0;			
+			 
+		} catch(e) {
+			console.error("create object '" + className + "' failed"); 
+		}  
+		return -1;
+	}
+	
+	this.nativeBridge.onCreateObject.connect(function (objectId, callbackId, args) {
+		var obj = this.objects[objectId];
+		if (!obj) {
+			console.error("WebBridge onCreateObject " + objectId + "," + callbackId + "failed");
+			return;
+		}
+		if (args.length<=0) {
+			console.error("onCreateObject error args:", args);
+			return;
+		}
+		var arg = args[0] == 0?null:obj;
+		obj.popCallBack(callbackId, arg);
+	});
+	
+	exec(objectId, functionName, callback) {
+		var obj = this.objects[objectId];
+		if (!obj) {
+			console.error("WebBridge exec "+"functionName " + "," + objectId + "failed");
+			return -1;
+		}
+		
+		obj.pushCallBack(objectId, functionName, callback);
+	    this.nativeBridge.exec(objectId, funtionName, parames, callback);
+	}
+	
+	this.nativeBridge.onExec.connect(function (objectId, callbackId, args) {
+		var obj = this.objects[objectId];
+		if (!obj) {
+			console.error("WebBridge onmessage " + objectId + "," + callbackId + "failed");
+			return;
+		}
+		obj.popCallBack(callbackId, args);
+	});
+	
+	this.nativeBridge.onMessage.connect(function (objectId, callbackId, args) {
+		var obj = this.objects[objectId];
+		if (!obj) {
+			console.error("WebBridge onmessage " + objectId + "," + callbackId + "failed");
+			return;
+		}
+		obj.onMessage(callbackId, args);
+	});
+}
+
+class WebObject {
+    constructor(nativeBridge) {
+        this.responseCallbacks = {};
+    }
+
+    pushCallBack(funtionName, args, callback) {
+		var callbackId = "";
+		if (callback) {
+			callbackId = funtionName + "_" + generateUniqueId();
+			this.responseCallbacks[callbackId] = callback;
+		}
+    });
+	
+	popCallBack(args, callbackId) {
+		if (callbackId == "") {
+			console.error("have no callback!!!");
+			return;
+		}
+		
+		this.responseCallbacks[callbackId](args);
+        delete this.responseCallbacks[callbackId];
+	}
+	
+	onMessage(args) {
+		console.log("onMessage", args);
+	}
+	
+	function generateUniqueId() {
+			var uid = randomString(10) + "_" + (new Date()).getTime();
+			 console.log(uid);
+			 return uid;
+		}
+}
+
+class TestObject extends WebObject {
+	constructor() {
+        super();
+    }
+}
+
 function bridge(callback) {
     console.log("bridge construct");
 	var responseCallbacks = {};

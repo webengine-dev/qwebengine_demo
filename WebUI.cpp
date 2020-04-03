@@ -32,9 +32,13 @@ WebUI::WebUI(QWidget* parent):
     QWebEngineView (parent) {
     init();
 
-    m_JSBridge = new JSBridge(this);
+    ObjectFactory::registerClass<Test>();
+
+    //m_JSBridge = new JSBridge(this);
+    NativeBridge *bridge = new NativeBridge(this);
     QWebChannel* webChannel = new QWebChannel(this);
-    webChannel->registerObject("nativeBridge", m_JSBridge);
+    //webChannel->registerObject("nativeBridge", m_JSBridge);
+    webChannel->registerObject("nativeBridge", bridge);
     page()->setWebChannel(webChannel);
 
     InjectJsFile(":/resource/js/qwebchannel");
@@ -110,4 +114,60 @@ JSBridge::~JSBridge() {
 
 void JSBridge::request(const QString &cmd, const QVariantMap &args, const QString &jsCallbackId) {
     m_WebUI->request(cmd, args, jsCallbackId);
+}
+
+NativeBridge::NativeBridge(WebUI *ui): m_WebUI(ui)
+{
+
+}
+
+NativeBridge::~NativeBridge()
+{
+
+}
+
+void NativeBridge::createObject(const QString &className, const QString &objectId, const QString &jsCallbackId)
+{
+   QObject* object = ObjectFactory::createObject(className);
+   int ret = 0;
+   if (!object) {
+       ret = -1;
+       qDebug()<<"createObject faild"<<className<<objectId<<jsCallbackId;
+   } else {
+       m_objects[objectId] = object;
+   }
+   emit onCreateObject(objectId, jsCallbackId, ret);
+}
+
+void NativeBridge::exec(const QString &objectId, const QString &functionName, const QVariantMap &args,
+                        const QString &jsCallbackId)
+{
+    QObject *obj = m_objects[objectId];
+    if (!obj) {
+        qDebug()<<"exec faild"<<objectId<<functionName<<jsCallbackId;
+    }
+
+
+    QVariantMap retVal;
+    bool ret = QMetaObject::invokeMethod(obj, functionName, Qt::DirectConnection,
+                              Q_RETURN_ARG(QVariantMap, retVal),
+                              Q_ARG(QVariantMap, QVariantMap),
+                              Q_ARG(QString, jsCallbackId),
+                              Q_ARG((void*), [objectId, jsCallbackId](QVariantMap args) {
+        emit onExec(objectId, args, jsCallbackId, 0);
+    }));
+
+    if (!ret) {
+        emit onExec(objectId, retVal, jsCallbackId, -1);
+    }
+}
+
+Test::Test()
+{
+
+}
+
+Test::~Test()
+{
+
 }

@@ -54,4 +54,66 @@ private:
     WebUI *m_WebUI;
 };
 
+class ObjectFactory
+{
+public:
+    template<typename T>
+    static void registerClass()
+    {
+        constructors().insert( T::staticMetaObject.className(), &constructorHelper<T> );
+    }
+
+    static QObject* createObject( const QByteArray& className, QObject* parent = NULL )
+    {
+        Constructor constructor = constructors().value( className );
+        if ( constructor == NULL )
+            return NULL;
+        return (*constructor)( parent );
+    }
+
+private:
+    typedef QObject* (*Constructor)( QObject* parent );
+
+    template<typename T>
+    static QObject* constructorHelper( QObject* parent )
+    {
+        return new T( parent );
+    }
+
+    static QHash<QByteArray, Constructor>& constructors()
+    {
+        static QHash<QByteArray, Constructor> instance;
+        return instance;
+    }
+};
+
+class NativeBridge : public QObject {
+    Q_OBJECT
+
+public:
+    NativeBridge(WebUI *ui);
+    ~NativeBridge();
+
+public slots:
+    void createObject(const QString &className, const QString &objectId, const QString &jsCallbackId);
+    void exec(const QString &objectId, const QString &functionName, const QVariantMap &args, const QString &jsCallbackId);
+
+signals:
+    void onCreateObject(const QString &objectId, const QString& callbackId, const QVariant& result);
+    void onExec(const QString &objectId, const QVariantMap &args, const QString &jsCallbackId, const QVariant& result=0);
+    void onMessage(const QString &objectId, const QVariantMap &args);
+
+private:
+    WebUI *m_WebUI;
+
+    QMap<QString, QObject*> m_objects;
+};
+
+class Test: QObject{
+   Q_OBJECT
+public:
+    Test();
+    ~Test();
+};
+
 #endif // WEBUI_H
