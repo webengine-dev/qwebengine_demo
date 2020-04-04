@@ -3,6 +3,7 @@
 #include <QtWebChannel>
 #include <QWebEngineScriptCollection>
 #include <QWebEngineSettings>
+#include <QVariantMap>
 
 void WebUI::init() {//add new functions here
     m_handlerMap["normal"] = &WebUI::normalWindow;
@@ -41,8 +42,8 @@ WebUI::WebUI(QWidget* parent):
     webChannel->registerObject("nativeBridge", bridge);
     page()->setWebChannel(webChannel);
 
-    InjectJsFile(":/resource/js/qwebchannel");
-    InjectJsFile(":/resource/js/bridge");
+    //InjectJsFile(":/resource/js/qwebchannel");
+    //InjectJsFile(":/resource/js/bridge");
 
     //setContextMenuPolicy(Qt::NoContextMenu);
     //page()->setBackgroundColor(Qt::transparent);
@@ -128,7 +129,7 @@ NativeBridge::~NativeBridge()
 
 void NativeBridge::createObject(const QString &className, const QString &objectId, const QString &jsCallbackId)
 {
-   QObject* object = ObjectFactory::createObject(className);
+   QObject* object = ObjectFactory::createObject(className.toLatin1());
    int ret = 0;
    if (!object) {
        ret = -1;
@@ -148,21 +149,25 @@ void NativeBridge::exec(const QString &objectId, const QString &functionName, co
     }
 
 
-    QVariantMap retVal;
-    bool ret = QMetaObject::invokeMethod(obj, functionName, Qt::DirectConnection,
-                              Q_RETURN_ARG(QVariantMap, retVal),
-                              Q_ARG(QVariantMap, QVariantMap),
-                              Q_ARG(QString, jsCallbackId),
-                              Q_ARG((void*), [objectId, jsCallbackId](QVariantMap args) {
+    auto call = [=](QVariantMap args) {
         emit onExec(objectId, args, jsCallbackId, 0);
-    }));
+    };
+    QVariantMap retVal;
+    bool ret = QMetaObject::invokeMethod(obj, functionName.toStdString().c_str(),
+                                         Qt::DirectConnection,
+                              Q_RETURN_ARG(QVariantMap, retVal),
+                              Q_ARG(QVariantMap, args),
+                              Q_ARG(QString, jsCallbackId),
+                              Q_ARG(int, (int)&call));
 
     if (!ret) {
         emit onExec(objectId, retVal, jsCallbackId, -1);
     }
 }
 
-Test::Test()
+
+Test::Test(QObject *parent)
+    : QObject(parent)
 {
 
 }

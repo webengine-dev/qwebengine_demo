@@ -109,10 +109,10 @@ private:
     QMap<QString, QObject*> m_objects;
 };
 
-class Test: QObject{
+class Test: public QObject {
    Q_OBJECT
 public:
-    Test();
+    Test(QObject *parent=0);
     ~Test();
 };
 

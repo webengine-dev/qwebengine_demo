@@ -3,11 +3,19 @@
 <head>
     <title>qwebchannel demo</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <!--<script type="text/javascript" src="../../resource/js/qwebchannel.js"></script>
-	<script type="text/javascript" src="../../resource/js/bridge.js"></script>-->
+    <script type="text/javascript" src="../../resource/js/qwebchannel"></script>
+	<script type="text/javascript" src="../../resource/js/bridge"></script>
 
     <script>
-		var main = null;
+	var webBridge = new WebBridge();
+	webBridge.init(function(obj) {
+		console.log(obj);
+		
+		var Test = obj.createObject("Test", function(obj) {
+			console.log("createObject test:",obj);
+		});
+	});	
+		/*var main = null;
 		function create() {
 			new bridge(function(obj) {
 			    main = obj;
@@ -32,10 +40,10 @@
 			main.maximize(function(arg) {
 				console.log("maximize finished");
 			});
-		}
+		}*/
     </script>
 </head>
-<body onload="create()">
+<body onload="">
 <button onclick="normal()">正常显示</button>
 <button onclick="minimize()">最小化</button>
 <button onclick="maximize()">最大化</button>
