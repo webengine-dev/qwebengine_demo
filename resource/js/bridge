@@ -8,7 +8,7 @@ class WebObject {
     pushCallBack(funtionName, args, callback) {
 		var callbackId = "";
 		if (callback) {
-			callbackId = funtionName + "_" + generateUniqueId();
+			callbackId = funtionName + "_" + this.generateUniqueId();
 			this.responseCallbacks[callbackId] = callback;
 		}
     }
@@ -28,16 +28,33 @@ class WebObject {
 	}
 	
 	generateUniqueId() {
-			var uid = randomString(10) + "_" + (new Date()).getTime();
+			var uid = this.randomString(10) + "_" + (new Date()).getTime();
 			 console.log(uid);
 			 return uid;
 		}
+		
+	randomString(len) {
+		len = len || 32;
+		var $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+		var maxPos = $chars.length;
+		var pwd = '';
+		for (var i = 0; i < len; i++) {
+			pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
+		}
+		return pwd;
+	}
 }
 
 class Test extends WebObject {
-	constructor() {
+	constructor(webBridge, id) {
         super();
+		this.WebBridge = webBridge;
+		this.id = id;
     }
+	
+	testAPI(callback) {
+	  this.WebBridge.exec(this.id, "testAPI", {}, callback);
+	}
 }
 
 class WebBridge extends WebObject {
@@ -61,6 +78,7 @@ class WebBridge extends WebObject {
 				}
 				
 				pThis.nativeBridge.onCreateObject.connect(function (objectId, callbackId, args) {
+				console.log("onCreateObject", objectId, callbackId, args);
 					var obj = pThis.objects[objectId];
 					if (!obj) {
 						console.error("WebBridge onCreateObject " + objectId + "," + callbackId + "failed");
@@ -106,31 +124,37 @@ class WebBridge extends WebObject {
 		
 		try {
 		console.log("createObject ", "new " + className + "();");
-			var obj = eval("new " + className + "()");
+			var obj = null;
 			var objectId = className + this.generateUniqueId();
+			if (className == "Test") {
+				obj = new Test(this, objectId);
+			} else {
+				console.log("createObject " + className + " failed");
+				return -1;
+			}
+			
+			
             this.objects[objectId] = obj;
-
             var functionName = "createObject";
-			this.pushCallBack(objectId, functionName, callback);
+			this.pushCallBack(functionName, {}, callback);
             this.nativeBridge.createObject(objectId, className, callback);
 			
             return 0;			
-			 
 		} catch(e) {
 			console.error("create object '" + className + "' failed", e); 
 		}  
 		return -1;
 	}
 	
-	exec(objectId, functionName, callback) {
+	exec(objectId, functionName, args, callback) {
 		var obj = this.objects[objectId];
 		if (!obj) {
 			console.error("WebBridge exec "+"functionName " + "," + objectId + "failed");
 			return -1;
 		}
 		
-		obj.pushCallBack(objectId, functionName, callback);
-	    this.nativeBridge.exec(objectId, funtionName, parames, callback);
+		obj.pushCallBack(functionName, args, callback);
+	    this.nativeBridge.exec(objectId, funtionName, args, callback);
 	}
 }
 

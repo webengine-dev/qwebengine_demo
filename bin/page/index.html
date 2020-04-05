@@ -11,9 +11,15 @@
 	webBridge.init(function(obj) {
 		console.log(obj);
 		
-		var Test = obj.createObject("Test", function(obj) {
-			console.log("createObject test:",obj);
+		var ret = obj.createObject("Test", function(obj) {
+			console.log("createObject test:", obj);
+			obj.testAPI(function(){
+				alert("===");
+			});
+			
 		});
+		
+		console.log("ret ===", ret);
 	});	
 		/*var main = null;
 		function create() {

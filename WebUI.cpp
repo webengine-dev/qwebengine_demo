@@ -127,8 +127,10 @@ NativeBridge::~NativeBridge()
 
 }
 
+#include <QMessageBox>
 void NativeBridge::createObject(const QString &className, const QString &objectId, const QString &jsCallbackId)
 {
+    QMessageBox::information(NULL, "sss", "ssss");
    QObject* object = ObjectFactory::createObject(className.toLatin1());
    int ret = 0;
    if (!object) {
@@ -153,12 +155,18 @@ void NativeBridge::exec(const QString &objectId, const QString &functionName, co
         emit onExec(objectId, args, jsCallbackId, 0);
     };
     QVariantMap retVal;
+//    bool ret = QMetaObject::invokeMethod(obj, functionName.toStdString().c_str(),
+//                                         Qt::DirectConnection,
+//                              Q_RETURN_ARG(QVariantMap, retVal),
+//                              Q_ARG(QVariantMap, args),
+//                              Q_ARG(QString, jsCallbackId),
+//                              Q_ARG(int, (int)&call));
+
     bool ret = QMetaObject::invokeMethod(obj, functionName.toStdString().c_str(),
                                          Qt::DirectConnection,
                               Q_RETURN_ARG(QVariantMap, retVal),
                               Q_ARG(QVariantMap, args),
-                              Q_ARG(QString, jsCallbackId),
-                              Q_ARG(int, (int)&call));
+                              Q_ARG(QString, jsCallbackId));
 
     if (!ret) {
         emit onExec(objectId, retVal, jsCallbackId, -1);
@@ -175,4 +183,9 @@ Test::Test(QObject *parent)
 Test::~Test()
 {
 
+}
+
+void Test::TestAPI(const QVariantMap &args, const QString &jsCallbackId)
+{
+    qDebug()<<"TestAPI"<<endl;
 }

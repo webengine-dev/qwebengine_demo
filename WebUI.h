@@ -114,6 +114,9 @@ class Test: public QObject {
 public:
     Test(QObject *parent=0);
     ~Test();
+
+    void TestAPI(const QVariantMap &args,
+                 const QString &jsCallbackId);
 };
 
 #endif // WEBUI_H
