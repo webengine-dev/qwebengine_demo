@@ -3,41 +3,58 @@
 <head>
     <title>qwebchannel demo</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <!--<script type="text/javascript" src="../../resource/js/qwebchannel.js"></script>
-	<script type="text/javascript" src="../../resource/js/bridge.js"></script>-->
+    <!--<script type="text/javascript" src="../../resource/js/qwebchannel"></script>
+	<script type="text/javascript" src="../../resource/js/bridge"></script>-->
 
     <script>
-		var main = null;
+	function init() {
+		initBridge(function(){
+			jsBridgeAnswerCef.anyAnswer(function(pp){console.log("anyAnswer", pp);});
+			
+			jsBridgeAnswerCef.attachEvent(function(args) {
+				console.log("jsBridgeAnswerCef Event handle:", args);
+			});
+		});
+
+	
+		/*var main = null;
 		function create() {
 			new bridge(function(obj) {
 			    main = obj;
 				console.log("create bridge finished");
 			});
-		}
+		}*/
+	}
+	
+	function initVote(){
+		jsBridgeAnswerCef.connect(function(args) {
+			console.log("jsBridgeAnswerCef connect", args);
+		});
+	}
+	
+	function normal() {
+		jsBridgeUICef.normal(function(arg) {
+		console.log("normal finished");
+		});
+	}
 		
-		function normal() {
-		    console.log("main", main);
-			main.normal(function(arg) {
-				console.log("normal finished");
-			});
-		}
+	function minimize() {
+		jsBridgeUICef.minimize(function(arg) {
+			console.log("minimize finished");
+		});
+	}
 		
-		function minimize() {
-			main.minimize(function(arg) {
-				console.log("minimize finished");
-			});
-		}
-		
-		function maximize() {
-			main.maximize(function(arg) {
-				console.log("maximize finished");
-			});
-		}
+	function maximize() {
+		jsBridgeUICef.maximize(function(arg) {
+			console.log("maximize finished");
+		});
+	}
     </script>
 </head>
-<body onload="create()">
+<body onload="init()">
 <button onclick="normal()">正常显示</button>
 <button onclick="minimize()">最小化</button>
 <button onclick="maximize()">最大化</button>
+<button onclick="initVote()">初始化答题器</button>
 </body>
 </html>

@@ -8,9 +8,13 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets webchannel webenginewidgets multimedia multimediawidgets
 
-TARGET = qwebengine_demo
+TARGET = iTeach_ppss_Teacher
 TEMPLATE = app
 DESTDIR = ./bin
+
+CONFIG(debug, debug|release) {
+    DEFINES += QT_NO_DEBUG
+}
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
@@ -25,6 +29,9 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 CONFIG += c++11
 
+INCLUDEPATH += ./vote/include
+LIBS += -L$$PWD/libs -lSunVoteSDK
+
 win32{
 LIBS += -lAdvapi32
 LIBS += -ldbghelp
@@ -32,11 +39,19 @@ LIBS += -luser32
 }
 
 SOURCES += \
+        JSBridgeBase.cpp \
+        JSUIBridge.cpp \
         main.cpp \
-    WebUI.cpp
+        WebUI.cpp \
+        vote/JSVoteBridge.cpp \
+        vote/SunVoteManager.cpp
 
 HEADERS += \
-    WebUI.h
+    JSBridgeBase.h \
+    JSUIBridge.h \
+    WebUI.h \
+    vote/JSVoteBridge.h \
+    vote/SunVoteManager.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

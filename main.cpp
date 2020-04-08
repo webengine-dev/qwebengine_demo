@@ -158,7 +158,9 @@ int main(int argc, char *argv[]) {
     QTextCodec *codec = QTextCodec::codecForName("GBK");
     QTextCodec::setCodecForLocale(codec);
 
+#ifndef QT_NO_DEBUG
     qInstallMessageHandler(outputMessage);
+#endif
 
     QWebEngineSettings* setting = QWebEngineSettings::defaultSettings();
     setting->setAttribute(QWebEngineSettings::PluginsEnabled, true);
@@ -173,8 +175,9 @@ int main(int argc, char *argv[]) {
     setting->setAttribute(QWebEngineSettings::WebGLEnabled,true);
 
     WebUI w;
-    w.setMinimumSize(800, 600);
+    w.setMinimumSize(800, 800);
     w.show();
+    //QString path = "file:///" + QCoreApplication::applicationDirPath() + "/H5/garden_radish/v4.1/teacher.html";
     QString path = "file:///" + QCoreApplication::applicationDirPath() + "/page/index.html";
     w.load(QUrl(path));
 

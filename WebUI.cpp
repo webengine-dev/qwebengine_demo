@@ -3,38 +3,26 @@
 #include <QtWebChannel>
 #include <QWebEngineScriptCollection>
 #include <QWebEngineSettings>
-
-void WebUI::init() {//add new functions here
-    m_handlerMap["normal"] = &WebUI::normalWindow;
-    m_handlerMap["minimize"] = &WebUI::minimizeWindow;
-    m_handlerMap["maximize"] = &WebUI::maximizeWindow;
-}
-
-void WebUI::normalWindow(const QVariantMap& args, const QString& callbackId) {
-    Q_UNUSED(args);
-    showNormal();
-    respone(callbackId, QVariantMap());
-}
-
-void WebUI::minimizeWindow(const QVariantMap &args, const QString &callbackId) {
-    Q_UNUSED(args);
-    showMinimized();
-    respone(callbackId, QVariantMap());
-}
-
-void WebUI::maximizeWindow(const QVariantMap &args, const QString &callbackId) {
-    Q_UNUSED(args);
-    showMaximized();
-    respone(callbackId, QVariantMap());
-}
+#include "vote/JSVoteBridge.h"
+#include "JSBridgeBase.h"
+#include "JSUIBridge.h"
 
 WebUI::WebUI(QWidget* parent):
     QWebEngineView (parent) {
-    init();
 
-    m_JSBridge = new JSBridge(this);
+    QHash<QString, QObject*> channelObjects;
+
+    m_JSUIBridge = new JSUIBridge(this);
+    m_JSUIBridge->init();
+
+    m_JSVoteBridge = new JSVoteBridge(this);
+    m_JSVoteBridge->init();
+
+    channelObjects.insert("jsBridgeUICef", m_JSUIBridge);
+    channelObjects.insert("jsBridgeAnswerCef", m_JSVoteBridge);
+
     QWebChannel* webChannel = new QWebChannel(this);
-    webChannel->registerObject("nativeBridge", m_JSBridge);
+    webChannel->registerObjects(channelObjects);
     page()->setWebChannel(webChannel);
 
     InjectJsFile(":/resource/js/qwebchannel");
@@ -44,7 +32,14 @@ WebUI::WebUI(QWidget* parent):
     //page()->setBackgroundColor(Qt::transparent);
 
     QWebEngineSettings* setting = page()->settings();
-    setting->setAttribute(QWebEngineSettings::WebGLEnabled,true);
+    setting->setAttribute(QWebEngineSettings::WebGLEnabled, true);
+
+    //透明效果
+    /*
+    page()->setBackgroundColor(Qt::transparent);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setAutoFillBackground(true);
+    setWindowFlags(Qt::FramelessWindowHint);*/
 }
 
 void WebUI::load(const QUrl &url) {
@@ -56,16 +51,6 @@ void WebUI::load(const QUrl &url) {
     page()->setDevToolsPage(m_devWevView->page());
 
     QWebEngineView::load(url);
-}
-
-void WebUI::request(const QString &cmd, const QVariantMap &args, const QString &jsCallbackId) {
-    qDebug()<<"request"<<cmd<<"---"<<jsCallbackId;
-    Handler handler = m_handlerMap.value(cmd, nullptr);
-    if (handler) {
-        (this->*handler)(args, jsCallbackId);
-    } else {
-        qDebug()<<"!!!error to get function "<<cmd;
-    }
 }
 
 void WebUI::InvokeJs(const QString &js) {
@@ -93,21 +78,6 @@ bool WebUI::InjectJsFile(const QString &fileName) {
     return false;
 }
 
-void WebUI::respone(const QString& callbackId, const QVariant& result) {
-    emit m_JSBridge->respone(callbackId, result);
-}
-
 WebUI::~WebUI() {
 
-}
-
-JSBridge::JSBridge(WebUI *ui)
-    : QObject(ui), m_WebUI(ui) {
-}
-
-JSBridge::~JSBridge() {
-}
-
-void JSBridge::request(const QString &cmd, const QVariantMap &args, const QString &jsCallbackId) {
-    m_WebUI->request(cmd, args, jsCallbackId);
 }

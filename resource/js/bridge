@@ -1,68 +1,172 @@
 "use strict";
+var jsBridgeAnswerCef = {};
+var jsBridgeUICef = {};
 
+var DebugBridge = true;
+
+function initBridge(callback) {
+    new QWebChannel(qt.webChannelTransport, function(channel) {
+        debug("init QWebChannel finished");
+        bindBridgeAnswer(channel.objects.jsBridgeAnswerCef, jsBridgeAnswerCef);
+        bindBridgeUI(channel.objects.jsBridgeUICef, jsBridgeUICef);
+        if (callback) {
+            callback();
+        }
+    });
+}
+
+function bindBridgeAnswer(nativeBridge, obj) {
+    bind(nativeBridge, obj);
+    obj.anyAnswer = function(callback) {
+        obj.request("anyAnswer", {}, callback);
+    }
+
+    obj.connect = function(callback) {//连接基站
+        obj.request("connect", {}, callback);
+    }
+}
+
+function bindBridgeUI(nativeBridge, obj) {
+    bind(nativeBridge, obj);
+    obj.minimize = function(callback) {
+        obj.request("minimize", {}, callback);
+    }
+
+    obj.maximize = function(callback) {
+        obj.request("maximize", {}, callback);
+    }
+
+    obj.normal = function(callback) {
+        obj.request("normal", {}, callback);
+    }
+}
+
+function bind(nativeBridge, obj) {
+    debug("bind", nativeBridge);
+
+    obj.responseCallbacks = {};
+	obj.eventHanler = null;
+	
+	obj.attachEvent = function(callback) {
+		obj.eventHanler = callback;
+    }
+
+    obj.request = function(cmd, args, callback) {
+	    debug(cmd, args, callback);
+        var callbackId = '';
+        if (callback) {
+            callbackId = cmd + '_' + generateUniqueId();
+            obj.responseCallbacks[callbackId] = callback;
+        }
+        nativeBridge.request(cmd, args, callbackId);
+    }
+
+    nativeBridge.respone.connect(function(callbackId, args) {
+        var callbackFunc = obj.responseCallbacks[callbackId];
+        if (callbackFunc) {
+            callbackFunc(args);
+            delete obj.responseCallbacks[callbackId];
+        }
+    });
+	
+	nativeBridge.onEvent.connect(function(args) {//事件
+        if (obj.eventHanler) {
+            obj.eventHanler(args);
+        }
+    });
+
+    function generateUniqueId() {
+        var uid = randomString(10) + "_" + (new Date()).getTime();
+        console.log(uid);
+        return uid;
+    }
+
+    function randomString(len) {
+        len = len || 32;
+        var $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+        var maxPos = $chars.length;
+        var pwd = '';
+        for (var i = 0; i < len; i++) {
+            pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
+        }
+        return pwd;
+    }
+}
+
+function debug(text) {
+    if (DebugBridge) {
+        console.log(text);
+    }
+}
+
+//===============================
 function bridge(callback) {
     console.log("bridge construct");
-	var responseCallbacks = {};
-	var o_ = {};
-	
-    new QWebChannel(qt.webChannelTransport, function(channel) {
+    var responseCallbacks = {};
+    var o_ = {};
+
+    new QWebChannel(qt.webChannelTransport,
+    function(channel) {
         //console.log("init finished");
         init(channel.objects.nativeBridge, o_);
         if (callback) {
             callback(o_);
         }
     });
-	
+
     function init(nativeBridge, callback) {
-		console.log(nativeBridge);
+        console.log(nativeBridge);
 
         o_.normal = function(callback) {
             console.log("nomal");
-			request("normal", {}, callback);
+            request("normal", {},
+            callback);
         }
-		
-		o_.minimize = function(callback) {
-			console.log("minimize");
-			request("minimize", {}, callback);
-		}
-		
-		o_.maximize = function(callback) {
+
+        o_.minimize = function(callback) {
+            console.log("minimize");
+            request("minimize", {},
+            callback);
+        }
+
+        o_.maximize = function(callback) {
             console.log("maximize");
-			request("maximize", {}, callback);
+            request("maximize", {},
+            callback);
         }
-		
-		function request(cmd, args, callback) {
-			var callbackId = '';
-		    if (callback) {
-			  callbackId = cmd + '_' + generateUniqueId();
-			  responseCallbacks[callbackId] = callback;
-		    }
-		    nativeBridge.request(cmd, args, callbackId);
-		}
-		
-		nativeBridge.respone.connect(function (callbackId, args) {
-			  var callbackFunc = responseCallbacks[callbackId];
-			  if (callbackFunc) {
-				callbackFunc(args);
-				delete responseCallbacks[callbackId];
-			  }
-		});
-		
-		function generateUniqueId() {
-			var uid = randomString(10) + "_" + (new Date()).getTime();
-			 console.log(uid);
-			 return uid;
-		}
-		
-		function randomString(len) {
-			len = len || 32;
-			var $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
-			var maxPos = $chars.length;
-			var pwd = '';
-			for (var i = 0; i < len; i++) {
-				pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
-			}
-			return pwd;
-		}
+
+        function request(cmd, args, callback) {
+            var callbackId = '';
+            if (callback) {
+                callbackId = cmd + '_' + generateUniqueId();
+                responseCallbacks[callbackId] = callback;
+            }
+            nativeBridge.request(cmd, args, callbackId);
+        }
+
+        nativeBridge.respone.connect(function(callbackId, args) {
+            var callbackFunc = responseCallbacks[callbackId];
+            if (callbackFunc) {
+                callbackFunc(args);
+                delete responseCallbacks[callbackId];
+            }
+        });
+
+        function generateUniqueId() {
+            var uid = randomString(10) + "_" + (new Date()).getTime();
+            console.log(uid);
+            return uid;
+        }
+
+        function randomString(len) {
+            len = len || 32;
+            var $chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+            var maxPos = $chars.length;
+            var pwd = '';
+            for (var i = 0; i < len; i++) {
+                pwd += $chars.charAt(Math.floor(Math.random() * maxPos));
+            }
+            return pwd;
+        }
     }
 }
